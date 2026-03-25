@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Bot</title>
+  <script src="data.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #eef2ff; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 20px; }
+    #chat-box { width: 100%; max-width: 680px; background: white; border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(79,70,229,0.15); overflow: hidden; display: flex; flex-direction: column; }
+    #header { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white;
+      padding: 20px 24px; }
+    #header h2 { font-size: 20px; margin-bottom: 4px; }
+    #header p { font-size: 13px; opacity: 0.85; }
+    #messages { flex: 1; height: 450px; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 12px; background: #f8faff; }
+    .msg { padding: 12px 16px; border-radius: 16px; max-width: 82%; line-height: 1.6;
+      font-size: 14.5px; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .user { background: #4f46e5; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .bot { background: white; color: #1e293b; align-self: flex-start;
+      border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .bot.thinking { color: #94a3b8; font-style: italic; }
+    #input-area { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #e8ecf4; background: white; }
+    #user-input { flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px;
+      font-size: 14px; outline: none; transition: border 0.2s; }
+    #user-input:focus { border-color: #4f46e5; }
+    #send-btn { background: #4f46e5; color: white; border: none; border-radius: 12px;
+      padding: 12px 22px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+    #send-btn:hover { background: #4338ca; }
+    #send-btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div id="chat-box">
+    <div id="header">
+      <h2>📄 PDF Assistant Bot</h2>
+      <p>Ask me anything from the document!</p>
+    </div>
+    <div id="messages">
+      <div class="msg bot">👋 Hello! I've read the document. Ask me any question and I'll answer based on it.</div>
+    </div>
+    <div id="input-area">
+      <input id="user-input" type="text" placeholder="Ask a question about the document..."
+        onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // ⬇️ PASTE YOUR GEMINI API KEY BETWEEN THE QUOTES BELOW
+    const API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+
+    const sendBtn = document.getElementById("send-btn");
+    const messagesDiv = document.getElementById("messages");
+    const inputEl = document.getElementById("user-input");
+
+    async function sendMessage() {
+      const question = inputEl.value.trim();
+      if (!question) return;
+
+      appendMessage(question, "user");
+      inputEl.value = "";
+      sendBtn.disabled = true;
+
+      const thinkingId = "t" + Date.now();
+      appendMessage("Thinking...", "bot thinking", thinkingId);
+
+      try {
+        const prompt = `You are a helpful assistant. The user has uploaded a document. Answer questions ONLY based on the document content below.
+If the answer is not found in the document, say: "I couldn't find that in the document. Please check the document directly."
+Be clear, concise, and friendly.
+
+DOCUMENT CONTENT:
+${MY_DATA}
+
+USER QUESTION: ${question}`;
+
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          }
+        );
+
+        const data = await res.json();
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
+          || "Sorry, I couldn't get a response. Please try again.";
+
+        const el = document.getElementById(thinkingId);
+        if (el) { el.innerText = reply; el.classList.remove("thinking"); }
+
+      } catch (err) {
+        const el = document.getElementById(thinkingId);
+        if (el) { el.innerText = "⚠️ Error: " + err.message; el.classList.remove("thinking"); }
+      }
+
+      sendBtn.disabled = false;
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function appendMessage(text, className, id = "") {
+      const div = document.createElement("div");
+      div.className = "msg " + className;
+      div.innerText = text;
+      if (id) div.id = id;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  </script>
+</body>
+</html>
+```
+
+4. **Find this line** in the code:
+```
+   const API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+```
+   Replace `PASTE_YOUR_GEMINI_API_KEY_HERE` with your actual Gemini API key from Step 2.
+
+5. Click **"Commit new file"** ✅
+
+---
+
+## ✅ STEP 7 — Turn On GitHub Pages (Free Hosting)
+
+1. In your repo, click **"Settings"** (top tab)
+2. In the left sidebar, click **"Pages"**
+3. Under **"Branch"**, select **`main`** and folder **`/ (root)`**
+4. Click **Save**
+5. Wait **2 minutes**, then visit:
+```
+https://YOUR-USERNAME.github.io/my-pdf-bot/
